@@ -1,0 +1,234 @@
+LAMMPS (31 Mar 2017)
+# 3D simple cubic lattice simulation
+dimension   2
+boundary    f p p
+region      box block -3.000000000 19.0000000 -2.00000000 2.00000000 -0.00110000 0.00110000
+
+units		   lj
+atom_style	bond
+atom_modify sort 0 1.
+bond_style  harmonic
+pair_style  lj/cut 3.5
+comm_modify mode single cutoff 3.0
+
+
+###other variables from thermo_cond
+
+
+# convert from LAMMPS real units to SI
+
+####
+
+
+# geometry
+read_data	ph_1D_fix_d=3.0_v3.3.pos
+  orthogonal box = (-3 -1 -0.0001) to (19 1 0.0001)
+  1 by 1 by 1 MPI processor grid
+  reading atoms ...
+  16 atoms
+  scanning bonds ...
+  1 = max bonds/atom
+  reading bonds ...
+  14 bonds
+  2 = max # of 1-2 neighbors
+  2 = max # of 1-3 neighbors
+  4 = max # of 1-4 neighbors
+  6 = max # of special neighbors
+group initialise id 1
+1 atoms in group initialise
+group type1_chain type 1
+8 atoms in group type1_chain
+
+pair_coeff  * * 0.0 1.0
+pair_coeff  1 2 0.5 0.5
+
+#
+neighbor 0.5 nsq
+neigh_modify delay 0 check no
+
+#Langevin random seed
+variable r equal 571101
+
+#Langevin Temperature
+variable t equal 0.005
+
+# Langevin Damping variable
+variable d equal 0.5
+
+
+
+#number of runs and timestep and dump frequency
+variable runs equal 5000
+variable run_label equal log(${runs})
+variable run_label equal log(5000)
+variable ts equal 0.005
+variable freq equal 5
+
+# time step
+timestep  ${ts}
+timestep  0.005
+
+
+# Create velocities and equilibrate
+compute   MyTemp all temp/partial 1 0 0
+
+velocity  type1_chain create $t 28711 mom yes rot yes dist gaussian temp MyTemp
+velocity  type1_chain create 0.005 28711 mom yes rot yes dist gaussian temp MyTemp
+WARNING: Mismatch between velocity and compute groups (../velocity.cpp:201)
+velocity  all set NULL 0.0 0.0 units box
+#velocity   initialise set 1.0 0.0 0.0 units lattice
+#
+fix        harmonic_wall all wall/region box harmonic 0.5 1.0 1.7
+fix        1 all langevin $t $t $d $r
+fix        1 all langevin 0.005 $t $d $r
+fix        1 all langevin 0.005 0.005 $d $r
+fix        1 all langevin 0.005 0.005 0.5 $r
+fix        1 all langevin 0.005 0.005 0.5 571101
+fix_modify 1 temp MyTemp
+fix        2 all setforce NULL 0. 0.
+fix        3 all nve
+fix        4 all phonon 10 50000 500000 map.in phonon sysdim 1
+fix_modify 4 temp MyTemp
+fix        5 type1_chain nvt temp 1.0 1.0 100
+
+
+###Conductivity computes and fixes
+
+compute      myKE type1_chain ke/atom
+compute      myPE type1_chain pe/atom
+compute      myStress type1_chain stress/atom NULL virial
+compute      flux type1_chain heat/flux myKE myPE myStress
+variable     Jx equal c_flux[1]/vol
+variable     Jy equal c_flux[2]/vol
+variable     Jz equal c_flux[3]/vol
+
+
+
+######
+
+
+
+#
+#                    1    2    3  4
+thermo_style  custom step temp pe etotal v_Jx
+thermo_modify temp MyTemp
+thermo   100
+
+
+
+
+
+
+dump    	4 all atom 50000 dump_LJ_ANA.lammpstrj
+#dump            myDump all atom 100 dump.atom.lammpstrj
+#dump            mydump2 all dcd 100 dump.dcd
+dump            xyz_dump all xyz ${freq} dump__ph_1D_fix_d=3.0_v3.8_runs=10^${run_label}_ts=${ts}_f=${freq}.xyz
+dump            xyz_dump all xyz 5 dump__ph_1D_fix_d=3.0_v3.8_runs=10^${run_label}_ts=${ts}_f=${freq}.xyz
+dump            xyz_dump all xyz 5 dump__ph_1D_fix_d=3.0_v3.8_runs=10^3.69897000433602_ts=${ts}_f=${freq}.xyz
+dump            xyz_dump all xyz 5 dump__ph_1D_fix_d=3.0_v3.8_runs=10^3.69897000433602_ts=0.005_f=${freq}.xyz
+dump            xyz_dump all xyz 5 dump__ph_1D_fix_d=3.0_v3.8_runs=10^3.69897000433602_ts=0.005_f=5.xyz
+#dump            d0 all image 100 dump.*.jpg type type
+
+run 		${runs}
+run 		5000
+WARNING: One or more atoms are time integrated more than once (../modify.cpp:274)
+Neighbor list info ...
+  update every 1 steps, delay 0 steps, check no
+  max neighbors/atom: 2000, page size: 100000
+  master list distance cutoff = 4
+  ghost atom cutoff = 4
+  1 neighbor lists, perpetual/occasional/extra = 1 0 0
+  (1) pair lj/cut, perpetual
+      attributes: half, newton on
+      pair build: half/nsq/newton
+      stencil: none
+      bin: none
+WARNING: Bond/angle/dihedral extent > half of periodic box length (../domain.cpp:906)
+Per MPI rank memory allocation (min/avg/max) = 7.25 | 7.25 | 7.25 Mbytes
+Step Temp PotEng TotEng v_Jx 
+       0        0.005 -2.6791264e-06 0.0023410709 -9.7356038e-06 
+     100 0.0029803504 0.0013293917  0.002726431 -7.0465427e-05 
+     200 0.0052671249 0.0010712106 0.0035401754 5.4194541e-05 
+     300 0.0077412922 0.0010963239 0.0047250546 7.0534381e-05 
+     400 0.0041975098 0.0012466454 0.0032142281 0.0001123458 
+     500  0.006608065 0.0012194294 0.0043169599 0.00019200261 
+     600 0.0077210238 0.0029086728 0.0065279027 -0.00035785856 
+     700  0.012164487 0.0025574514 0.0082595549 6.6503019e-05 
+     800 0.0086670947 0.0061261662  0.010188867 -4.9162101e-05 
+     900 0.0092091957 0.0031340939 0.0074509044 -0.00055416138 
+    1000 0.0068551478 0.0039352734 0.0071486239 -0.00064720999 
+    1100  0.007980459 0.0047663174 0.0085071576 -0.0004114592 
+    1200  0.010336499 0.0044537318 0.0092989656 0.00047355909 
+    1300  0.012369355 0.0035968743 0.0093950093 -0.0002365736 
+    1400  0.014464234 0.0018596722 0.0086397819 -3.9553537e-05 
+    1500  0.011587483 0.0026795928 0.0081112254 0.00010371166 
+    1600 0.0061795662 0.0029182928 0.0058149644 -0.00012087012 
+    1700 0.0023180243 0.0023333681  0.003419942 -4.1148539e-05 
+    1800 0.0068357486 0.0051343597 0.0083386169 -0.00080522248 
+    1900  0.014911965 0.0038840311  0.010874015 0.0006067738 
+    2000  0.019644347 0.0047948276  0.014003115 0.00082396062 
+    2100  0.012074831 0.0031461966 0.0088062737 0.00092101624 
+    2200 0.0076853689 0.0039666541 0.0075691707 8.7436302e-05 
+    2300 0.0086445628 0.0053742105 0.0094263493 0.00034305349 
+    2400 0.0089664255 0.0038304069 0.0080334189 -0.00034586672 
+    2500 0.0080875774   0.00488273 0.0086737819 -0.00036355441 
+    2600 0.0060916122 0.0060384435 0.0088938867 0.0001235903 
+    2700 0.0076078739 0.0074777926  0.011043983 0.0011492356 
+    2800 0.0066578352 0.0069507006  0.010071561 0.00098447484 
+    2900 0.0086027188 0.0069232096  0.010955734 0.00064666172 
+    3000 0.0091545687 0.0057948247  0.010086029 0.0002148719 
+    3100 0.0046231675 0.0046716363 0.0068387461 0.00088706341 
+    3200  0.014128081 0.0039815582  0.010604096 0.0014834981 
+    3300 0.0094214086 0.0033802301 0.0077965154 5.2293854e-05 
+    3400  0.012251861 0.0019377827 0.0076808428 0.00020629397 
+    3500 0.0057437981  0.003694908 0.0063873133 -0.00049282713 
+    3600 0.0082519386 0.0037763537 0.0076444499 0.00043982488 
+    3700 0.0032672533 0.0047933788 0.0063249038 -7.1891937e-05 
+    3800 0.0077885089 0.0065059497  0.010156813 0.00049769678 
+    3900 0.0050705167 0.0037933728 0.0061701775 -0.0004782106 
+    4000 0.0064442295 0.0036140311 0.0066347636 -0.00012883848 
+    4100 0.0094698237 0.0032684647 0.0077074446 0.0010730912 
+    4200 0.0050483019  0.004166922 0.0065333136 0.00070484735 
+    4300 0.0076249974 0.0043403048 0.0079145224 0.00074528414 
+    4400 0.0050917732 0.0033608411 0.0057476098 0.00025086425 
+    4500 0.0065281236 0.0042036986 0.0072637565 -0.00028743972 
+    4600 0.0091824893 0.0065017148  0.010806007 -0.00064127722 
+    4700 0.0042333638 0.0047614162 0.0067458055 5.8150752e-05 
+    4800 0.0070254275 0.0040231355 0.0073163046 0.00018797454 
+    4900 0.0061633036 0.0022398614   0.00512891 0.00011033147 
+    5000 0.0070360758 0.0030066234 0.0063047839 -0.00012570436 
+WARNING: Bond/angle/dihedral extent > half of periodic box length (../domain.cpp:906)
+Loop time of 0.06461 on 1 procs for 5000 steps with 16 atoms
+
+Performance: 33431355.085 tau/day, 77387.396 timesteps/s
+99.1% CPU use with 1 MPI tasks x no OpenMP threads
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Pair    | 0.0055726  | 0.0055726  | 0.0055726  |   0.0 |  8.62
+Bond    | 0.0012159  | 0.0012159  | 0.0012159  |   0.0 |  1.88
+Neigh   | 0.028175   | 0.028175   | 0.028175   |   0.0 | 43.61
+Comm    | 0.0054729  | 0.0054729  | 0.0054729  |   0.0 |  8.47
+Output  | 0.011261   | 0.011261   | 0.011261   |   0.0 | 17.43
+Modify  | 0.011219   | 0.011219   | 0.011219   |   0.0 | 17.36
+Other   |            | 0.001693   |            |       |  2.62
+
+Nlocal:    16 ave 16 max 16 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Nghost:    64 ave 64 max 64 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+Neighs:    113 ave 113 max 113 min
+Histogram: 1 0 0 0 0 0 0 0 0 0
+
+Total # of neighbors = 113
+Ave neighs/atom = 7.0625
+Ave special neighs/atom = 4.5
+Neighbor list builds = 5000
+Dangerous builds not checked
+print          "Heat flux in x: ${Jx}[LJ units of W/m^3]"
+Heat flux in x: -0.00012570435925408[LJ units of W/m^3]
+
+Please see the log.cite file for references relevant to this simulation
+
+Total wall time: 0:00:00

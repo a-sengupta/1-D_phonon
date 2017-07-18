@@ -1,0 +1,32 @@
+############################################################
+# group name of the atoms under study      : all
+# total number of atoms in the group       : 16
+# dimension of the system                  : 1 D
+# number of atoms per unit cell            : 1
+# dimension of the FFT mesh                : 16 x 1 x 1
+# number of wait steps before measurement  : 500000
+# frequency of the measurement             : 10
+# output result after this many measurement: 50000
+# number of processors used by this run    : 1
+############################################################
+# mapping information between lattice indices and atom id
+# nx ny nz nucell
+16 1 1 1
+# l1 l2 l3 k atom_id
+0 0 0 0 1
+1 0 0 0 2
+2 0 0 0 3
+3 0 0 0 4
+4 0 0 0 5
+5 0 0 0 6
+6 0 0 0 7
+7 0 0 0 8
+8 0 0 0 9
+9 0 0 0 10
+10 0 0 0 11
+11 0 0 0 12
+12 0 0 0 13
+13 0 0 0 14
+14 0 0 0 15
+15 0 0 0 16
+############################################################

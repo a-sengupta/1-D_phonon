@@ -99,7 +99,7 @@ thermo   100
 dump    	4 all atom 50000 dump_LJ_ANA.lammpstrj 
 #dump            myDump all atom 100 dump.atom.lammpstrj
 #dump            mydump2 all dcd 100 dump.dcd
-dump            xyz_dump all xyz ${freq} dump__ph_1D_fix_d=3.0_v3.8_runs=10^${run_label}_ts=${ts}_f=${freq}.xyz
+dump            xyz_dump all xyz ${freq} dump__ph_1D_fix_d=3.0_runs=10^${run_label}_ts=${ts}_f=${freq}.xyz
 #dump            d0 all image 100 dump.*.jpg type type
 
 run 		${runs}

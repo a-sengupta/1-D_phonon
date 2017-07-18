@@ -1,0 +1,8 @@
+#Ignore lmp_mpi
+lmp_mpi
+
+#ignore everything in the data_dump director (*.xyz files)
+data_dumps/
+
+#ignore lammps log file (and other lammps auto-generated files)
+*.lammps

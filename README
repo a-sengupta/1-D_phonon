@@ -3,7 +3,7 @@ matrix as well as phonon dispersion curve for 1 dimensional monoatomic chain.
 
 The files under this directory:
 
- 1) data.pos           : LAMMPS input file
+ 1) *.pos              : LAMMPS input file; specifies positions of atoms; uses same syntax as in.* below
  2) disp.dat           : phonon dispersion data from phonon.bin.1500000
  3) in.*               : LAMMPS input file, syntax: in.'phonon'_'dimension'_'wall-type'_'distance-between-chains'
  4) in.disp            : input file to get disp.dat by phana

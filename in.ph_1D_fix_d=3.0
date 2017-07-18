@@ -20,7 +20,7 @@ comm_modify mode single cutoff 3.0
 
 
 # geometry
-read_data	ph_1D_fix_d=3.0_v3.3.pos
+read_data	ph_1D_fix_d=3.0.pos
 group initialise id 1
 group type1_chain type 1
 

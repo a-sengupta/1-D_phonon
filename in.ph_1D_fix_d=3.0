@@ -23,6 +23,7 @@ comm_modify mode single cutoff 3.0
 read_data	ph_1D_fix_d=3.0.pos
 group initialise id 1
 group type1_chain type 1
+group type2_chain type 2
 
 pair_coeff  * * 0.0 1.0
 pair_coeff  1 2 0.5 0.5
@@ -35,7 +36,7 @@ neigh_modify delay 0 check no
 variable r equal 571101
 
 #Langevin Temperature
-variable t equal 0.005
+variable t equal 0.05
 
 # Langevin Damping variable
 variable d equal 0.5
@@ -43,9 +44,9 @@ variable d equal 0.5
 
 
 #number of runs and timestep and dump frequency
-variable runs equal 5000
+variable runs equal 1000
 variable run_label equal log(${runs})
-variable ts equal 0.005
+variable ts equal 0.001
 variable freq equal 5
 
 # time step
@@ -71,13 +72,14 @@ fix_modify 4 temp MyTemp
 
 ###Conductivity computes and fixes
 
-compute      myKE type1_chain ke/atom
-compute      myPE type1_chain pe/atom
-compute      myStress type1_chain stress/atom NULL virial
-compute      flux type1_chain heat/flux myKE myPE myStress
-variable     Jx equal c_flux[1]/vol
-variable     Jy equal c_flux[2]/vol
-variable     Jz equal c_flux[3]/vol
+compute      myKE type1_chain ke
+compute      myKE2 type2_chain ke
+compute      myPE all pe
+#compute      myStress type1_chain stress/atom NULL virial
+#compute      flux type1_chain heat/flux myKE myPE myStress
+#variable     Jx equal c_flux[1]/vol
+#variable     Jy equal c_flux[2]/vol
+#variable     Jz equal c_flux[3]/vol
 
 
 
@@ -87,9 +89,9 @@ variable     Jz equal c_flux[3]/vol
 
 #
 #                    1    2    3  4
-thermo_style  custom step temp pe etotal v_Jx
+thermo_style  custom step temp etotal c_myKE c_myKE2
 thermo_modify temp MyTemp
-thermo   100
+thermo   5
 
 
 
@@ -103,4 +105,4 @@ dump            xyz_dump all xyz ${freq} dump__ph_1D_fix_d=3.0_runs=10^${run_lab
 #dump            d0 all image 100 dump.*.jpg type type
 
 run 		${runs}
-print          "Heat flux in x: ${Jx}[LJ units of W/m^3]"
+#print          "Heat flux in x: ${Jx}[LJ units of W/m^3]"

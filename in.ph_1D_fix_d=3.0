@@ -1,32 +1,23 @@
 # 3D simple cubic lattice simulation
 dimension   2
-boundary    f p p
-region      box block -3.000000000 19.0000000 -2.00000000 2.00000000 -0.00110000 0.00110000 
+boundary    f f p
+region      box block -3.000000000 20.0000000 -2.00000000 2.00000000 -0.00110000 0.00110000 
 
 units		   lj
 atom_style	bond
 atom_modify sort 0 1.
 bond_style  harmonic
 pair_style  lj/cut 3.5
+
 comm_modify mode single cutoff 3.0
 
-
-###other variables from thermo_cond
-
-
-# convert from LAMMPS real units to SI
-
-####
-
-
 # geometry
-read_data	ph_1D_fix_d=3.0.pos
-group initialise id 1
-group type1_chain type 1
-group type2_chain type 2
+read_data	data2.pos
 
 pair_coeff  * * 0.0 1.0
 pair_coeff  1 2 0.5 0.5
+group type1_chain type 1 
+group type2_chain type 2
 
 #
 neighbor 0.5 nsq
@@ -36,73 +27,49 @@ neigh_modify delay 0 check no
 variable r equal 571101
 
 #Langevin Temperature
-variable t equal 0.05
+variable t equal 0.005
 
 # Langevin Damping variable
 variable d equal 0.5
 
-
-
-#number of runs and timestep and dump frequency
-variable runs equal 1000
-variable run_label equal log(${runs})
+#dump variables
+variable freq equal 25
 variable ts equal 0.001
-variable freq equal 5
+variable runs equal 30000
+
 
 # time step
 timestep  ${ts}
 
 
+
 # Create velocities and equilibrate 
 compute   MyTemp all temp/partial 1 0 0
-
 velocity  type1_chain create $t 28711 mom yes rot yes dist gaussian temp MyTemp
 velocity  all set NULL 0.0 0.0 units box
-#velocity   initialise set 1.0 0.0 0.0 units lattice
 #
-fix        harmonic_wall all wall/region box harmonic 0.5 1.0 1.7
 fix        1 all langevin $t $t $d $r
+fix        harmonic_wall all wall/region box harmonic 0.5 1.0 1.7
 fix_modify 1 temp MyTemp
 fix        2 all setforce NULL 0. 0.
 fix        3 all nve
 fix        4 all phonon 10 50000 500000 map.in phonon sysdim 1
 fix_modify 4 temp MyTemp
-#fix        5 type1_chain nvt temp 1.0 1.0 100
 
 
-###Conductivity computes and fixes
-
+#Computes
 compute      myKE type1_chain ke
 compute      myKE2 type2_chain ke
-compute      myPE all pe
-#compute      myStress type1_chain stress/atom NULL virial
-#compute      flux type1_chain heat/flux myKE myPE myStress
-#variable     Jx equal c_flux[1]/vol
-#variable     Jy equal c_flux[2]/vol
-#variable     Jz equal c_flux[3]/vol
 
 
 
-######
 
-
-
-#
 #                    1    2    3  4
-thermo_style  custom step temp etotal c_myKE c_myKE2
+thermo_style  custom step c_myKE c_myKE2 etotal
 thermo_modify temp MyTemp
-thermo   5
-
-
-
-
-
+thermo   50
 
 dump    	4 all atom 50000 dump_LJ_ANA.lammpstrj 
-#dump            myDump all atom 100 dump.atom.lammpstrj
-#dump            mydump2 all dcd 100 dump.dcd
-dump            xyz_dump all xyz ${freq} dump__ph_1D_fix_d=3.0_runs=10^${run_label}_ts=${ts}_f=${freq}.xyz
-#dump            d0 all image 100 dump.*.jpg type type
+dump            xyz2_dump all xyz ${freq} [25.07]dump3__ph_1D_fix_d=3.0_r=${runs}_ts=${ts}_f=${freq}.xyz
 
 run 		${runs}
-#print          "Heat flux in x: ${Jx}[LJ units of W/m^3]"

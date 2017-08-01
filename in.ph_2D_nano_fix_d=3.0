@@ -1,0 +1,93 @@
+units nano
+
+#physical constants
+variable a equal 0.45       #atomic spacing
+variable m equal 3.33*(10^-8)#atomic mass
+variable k equal 292700     #spring constant
+variable eps equal 100      #LJ minimum energy (Hamaker's constant)
+variable x_lo equal -3.00000000*${a}
+variable x_hi equal 20.00000000*${a}
+variable y_lo equal -1.35
+variable y_hi equal 2.7
+variable z_lo equal -0.00110000*${a}
+variable z_hi equal 0.001100000*${a}
+
+variable comm_val equal 3*${a}
+variable lj_cut equal 3.5*${a}
+
+#lattice setup
+dimension 2
+boundary  f f p
+region    box block ${x_lo} ${x_hi} ${y_lo} ${y_hi} ${z_lo} ${z_hi}
+
+atom_style  bond
+atom_modify sort 0 1.
+bond_style  harmonic
+pair_style  lj/cut ${lj_cut}
+
+comm_modify mode single cutoff ${comm_val}
+
+# geometry
+read_data	01-08_19.21_2D.pos
+
+variable p_coeff2 equal 0.5*${a}
+
+pair_coeff  * * 0.0 1.0
+pair_coeff  1 2 ${eps} ${p_coeff2}
+group type1_chain type 1 
+group type2_chain type 2
+
+#
+neighbor 0.5 nsq
+neigh_modify delay 0 check no
+
+#Langevin random seed
+variable r equal 571101
+
+#Langevin Temperature
+variable t equal 298
+
+# Langevin Damping variable
+variable d equal 0.0001298
+
+#dump variables
+variable freq equal 5
+variable ts equal 2.597*10^-16
+variable runs equal 1000000
+
+
+# time step
+timestep  ${ts}
+
+
+
+# Create velocities and equilibrate 
+compute   MyTemp all temp/partial 1 0 0
+velocity  type1_chain create $t 28711 mom yes rot yes dist gaussian temp MyTemp
+velocity  all set NULL 0.0 0.0 units box
+#
+fix        1 type1_chain langevin $t $t $d $r
+fix        harmonic_wall all wall/region box harmonic 0.5 1.0 1.7
+fix_modify 1 temp MyTemp
+fix        2 all setforce NULL 0. 0.
+fix        3 all nve
+#fix        4 all phonon 10 50000 500000 map.in phonon sysdim 1
+#fix_modify 4 temp MyTemp
+
+
+#Computes
+compute      myKE type1_chain ke
+compute      myKE2 type2_chain ke
+compute      myPE  all pe
+
+
+
+#                    1    2    3  4
+thermo_style  custom step c_myKE c_myKE2 c_myPE etotal
+thermo_modify temp MyTemp
+thermo   10000
+
+dump    	4 all atom 50000 dump_LJ_ANA.lammpstrj 
+dump            xyz2_dump all xyz ${freq} [01.08]dump_nano_ph_2D_fix_d=3.0_r=${runs}_ts=${ts}_f=${freq}.xyz
+
+run 		${runs}

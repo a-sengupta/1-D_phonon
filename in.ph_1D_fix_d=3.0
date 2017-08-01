@@ -27,15 +27,15 @@ neigh_modify delay 0 check no
 variable r equal 571101
 
 #Langevin Temperature
-variable t equal 0.5
+variable t equal 0.005
 
 # Langevin Damping variable
-variable d equal 1.0
+variable d equal 0.5
 
 #dump variables
-variable freq equal 25
+variable freq equal 5
 variable ts equal 0.001
-variable runs equal 1000000
+variable runs equal 10000
 
 
 # time step
@@ -48,10 +48,12 @@ compute   MyTemp all temp/partial 1 0 0
 velocity  type1_chain create $t 28711 mom yes rot yes dist gaussian temp MyTemp
 velocity  all set NULL 0.0 0.0 units box
 #
-fix        1 type1_chain langevin $t $t $d $r
+#fix        1 all langevin $t $t $d $r
 fix        harmonic_wall all wall/region box harmonic 0.5 1.0 1.7
-fix_modify 1 temp MyTemp
+#fix_modify 1 temp MyTemp
 fix        2 all setforce NULL 0. 0.
+
+fix        NEW type1_chain nvt temp $t $t 100
 fix        3 all nve
 fix        4 all phonon 10 50000 500000 map.in phonon sysdim 1
 fix_modify 4 temp MyTemp
@@ -67,9 +69,9 @@ compute      myKE2 type2_chain ke
 #                    1    2    3  4
 thermo_style  custom step c_myKE c_myKE2 etotal
 thermo_modify temp MyTemp
-thermo   1000
+thermo   100
 
 dump    	4 all atom 50000 dump_LJ_ANA.lammpstrj 
-dump            xyz2_dump all xyz ${freq} [26.07]dump3__ph_1D_fix_d=3.0_r=${runs}_ts=${ts}_f=${freq}.xyz
+dump            xyz2_dump all xyz ${freq} [01.08]dump3_nvt__ph_1D_fix_d=3.0_r=${runs}_ts=${ts}_f=${freq}.xyz
 
 run 		${runs}

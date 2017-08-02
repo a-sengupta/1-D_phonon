@@ -64,12 +64,17 @@ fix        3 all nve
 #Computes
 compute      myKE type1_chain ke
 compute      myKE2 type2_chain ke
+compute      myPE_vector type1_chain pe/atom #consider putting bond here
+compute      myPE2_vector type2_chain pe/atom
+
+compute      myPE type1_chain reduce sum c_myPE_vector
+compute      myPE2 type2_chain reduce sum c_myPE2_vector
 
 
 
 
 #                    1    2    3  4
-thermo_style  custom step c_myKE c_myKE2 f_1 f_new1 etotal
+thermo_style  custom step c_myKE c_myPE c_myKE2 c_myPE2 f_1 f_new1 etotal
 thermo_modify temp MyTemp
 thermo   1000
 

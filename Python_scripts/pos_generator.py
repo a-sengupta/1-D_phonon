@@ -114,7 +114,7 @@ def write_atom_chain(f,starting_id,number_of_atoms,spacing,y_coord,z_coord,vacuu
         else:
             atom_type = str(2)
             molecule_type = str(2)
-            x_position = str ( j*spacing + vacuum_gap_multiplier*spacing )
+            x_position = str ( (j-1)*spacing + vacuum_gap_multiplier*spacing )
             f.write("%s %s %s %s %s \n" %(id,molecule_type,atom_type,x_position,yz_string))   
 
 
@@ -129,8 +129,8 @@ def generate_2D_pos(name=datetime.now().strftime('%d-%m_%H.%M')+"_2D.pos",wall_g
     x_hi = str( (row_atoms - 1)*spacing + vacuum_gap + wall_gap_multiplier*spacing )
     y_lo = str( -1*wall_gap_multiplier*spacing)
     y_hi = str( (rows-1)*spacing + wall_gap_multiplier*spacing )
-    z_lo = str( -0.00110000)
-    z_hi = str( 0.00110000)
+    z_lo = str( -0.9*spacing)
+    z_hi = str( 0.1*spacing)
     
     f = open(file=name,mode='x')
     
@@ -198,5 +198,5 @@ def generate_2D_pos(name=datetime.now().strftime('%d-%m_%H.%M')+"_2D.pos",wall_g
     
     print("Position file has been written.")
     
-generate_2D_pos()    
+generate_2D_pos(row_atoms=50,rows=25,atomic_spacing=4.5,vacuum_gap_multiplier=(10/4.5))    
     

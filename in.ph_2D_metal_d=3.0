@@ -14,18 +14,18 @@ variable m equal 20.046          #atomic mass
 variable k equal 18.294          #spring constant
 variable eps equal 1.0           #LJ minimum energy (Hamaker's constant) <- to be varied
 variable x_lo equal -3.00000000*$a
-variable x_hi equal 469.0
+variable x_hi equal 244
 variable y_lo equal -3.000*$a
-variable y_hi equal 234.0
+variable y_hi equal 121.5
 variable z_lo equal -0.9*$a
 variable z_hi equal 0.1*$a
 
 variable comm_val equal 3.5*$a
-variable lj_cut equal 3.5*$a
+variable lj_cut equal 5*$a
 
 #lattice setup
 dimension 2
-boundary  f p p
+boundary  f f p
 region    box block ${x_lo} ${x_hi} ${y_lo} ${y_hi} ${z_lo} ${z_hi}
 
 atom_style  bond
@@ -36,7 +36,7 @@ pair_style  lj/cut ${lj_cut}
 comm_modify mode single cutoff ${comm_val}
 
 # geometry
-read_data	14-08_16.53_2D.pos
+read_data	16-08_12.20_NORMAL_2D.pos
 
 variable p_coeff2 equal 0.5
 
@@ -59,7 +59,7 @@ variable t equal 300.0
 variable d equal 0.0001
 
 #dump variables
-variable freq equal 5
+variable freq equal 50
 variable ts equal 0.000001
 variable runs equal 100000
 
@@ -68,13 +68,26 @@ variable runs equal 100000
 timestep  ${ts}
 
 
+### First equilibration
 
-# Create velocities and equilibrate 
+compute   first_temp all temp/partial 1 1 0
+fix       first_nvt  all nvt  temp 300 300 $d
+
+thermo_style custom step temp etotal
+thermo    1000
+run       10000
+
+velocity all scale 300
+unfix     first_nvt
+
+### Langevin run 
+
 compute   MyTemp1 type1_chain temp/partial 1 1 0
 compute   MyTemp2 type2_chain temp/partial 1 1 0
-velocity  type1_chain create $t 28711 mom yes rot yes dist gaussian temp MyTemp1
-velocity  type2_chain create 10.0 934839 mom yes rot yes dist gaussian temp MyTemp2
-velocity  all set NULL NULL 0.0 units box
+
+#velocity  type1_chain create $t 28711 mom yes rot yes dist gaussian temp MyTemp1
+#velocity  type2_chain create 10.0 934839 mom yes rot yes dist gaussian temp MyTemp2
+#velocity  all set NULL NULL 0.0 units box
 velocity  type1_chain zero linear
 velocity  type2_chain zero linear
 #
@@ -114,13 +127,13 @@ compute      myPE  all pe
 
 
 compute      chain1_flux type1_chain heat/flux KE_1 PE_1 Stress_1
-variable     Jx equal c_chain1_flux[4]/11664          #11664 is the volume taken up by type 1 atoms in Angstrom^3
-variable     Jy equal c_chain1_flux[5]/11664
+variable     Jx equal c_chain1_flux[1]/11664          #11664 is the volume taken up by type 1 atoms in Angstrom^3
+variable     Jy equal c_chain1_flux[2]/11664
 
 
 compute      chain2_flux type2_chain heat/flux KE_2 PE_2 Stress_2
-variable     Jx2 equal c_chain2_flux[4]/11664        
-variable     Jy2 equal c_chain2_flux[5]/11664
+variable     Jx2 equal c_chain2_flux[1]/11664        
+variable     Jy2 equal c_chain2_flux[2]/11664
 
 
 
@@ -129,6 +142,6 @@ thermo_style  custom step c_MyTemp1 c_MyTemp2 v_Jx v_Jy v_Jx2 v_Jy2 f_1 f_1_1 et
 thermo   1000
 
 dump    	4 all atom 50000 dump_LJ_ANA.lammpstrj 
-dump            xyz2_dump all xyz ${freq} [14.08]dump_ph_2D_METAL_d=3.0_r=${runs}_ts=${ts}_f=${freq}.xyz
+dump            xyz2_dump all xyz ${freq} [16.08]dump_ph_2D_METAL_Kappa-style-eq_d=3.0_r=${runs}_ts=${ts}_f=${freq}.xyz
 
 run 		${runs}
